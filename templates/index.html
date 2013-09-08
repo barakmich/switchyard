@@ -1,12 +1,32 @@
 <html>
   <head>
     <title>Switchyard Server</title>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+
+    <!-- Optional theme -->
+    <!--<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-theme.min.css">-->
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <style type="text/css">
+      [class*="col-"] {
+        padding-top: 15px;
+        padding-bottom: 15px;
+        background-color: #eee;
+        border: 1px solid #ddd;
+        background-color: rgba(86,86,124,.15);
+        border: 1px solid rgba(86,86,124,.2);
+      }
+    </style>
   </head>
   <body>
+    <div class="container">
     <h1>Switchyard</h1>
     <h2>Current Routes:</h2>
-    <table>
-      <thead>
+     <table class="table" id="hosttable">
+       <thead>
         <td>Hostname</td>
         <td>Target</td>
       </thead>
@@ -17,6 +37,29 @@
     </tr>
     {{end}}
   </table>
+    <h2>Add a route:</h2>
+    <table class="table">
+    <tr>
+      <td><input type="text" name="newhost"/></td>
+      <td><input type="text" name="newpath"/></td>
+      <td><button type="button" id="add_button" class="btn btn-primary">Add Route</button></td>
+    </tr>
+  </table>
+
+    </div>
   </body>
+  <script type="text/javascript">
+    $(function() {
+          $("#add_button").click(function() {
+            var data = {
+            "host": $("[name=newhost]").val(),
+            "target": $("[name=newpath]").val()
+            }
+            $.get("/add", data, function(return_data) { 
+              $("#hosttable > tbody").append(return_data);
+              });
+            });
+        });
+  </script>
 
 </html>

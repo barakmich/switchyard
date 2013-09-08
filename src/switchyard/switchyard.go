@@ -62,7 +62,7 @@ func CopyBidir(conn1 io.ReadWriteCloser, rw1 *bufio.ReadWriter, conn2 io.ReadWri
 }
 
 func (h *RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("incoming request: %#v\n", *r)
+	//fmt.Printf("incoming request: %#v\n", *r)
 	r.RequestURI = ""
 	r.URL.Scheme = "http"
 
@@ -139,7 +139,7 @@ func (h *RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		resp, err := h.Transport.RoundTrip(r)
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			fmt.Fprintf(w, "Error: %v", err)
+			fmt.Fprintf(w, "Error: %v\n", err)
 			return
 		}
 
@@ -198,11 +198,18 @@ type RootHandler struct {
 	Routes   chan *ForwardSpec
 }
 
+var add_templ = `
+<tr>
+<td> {{.Hostname}} </td>
+<td> {{.Target}} </td>
+</tr>
+`
+
 func (h *RootHandler) HandleAdd(w http.ResponseWriter, req *http.Request) {
 	host := req.URL.Query().Get("host")
 	target := req.URL.Query().Get("target")
 	if host != "" && target != "" {
-		h.AddForward(host, target)
+		h.AddForward(host, target, w)
 	}
 }
 
@@ -218,10 +225,15 @@ func (h *RootHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 }
 
-func (h *RootHandler) AddForward(host, target string) {
+func (h *RootHandler) AddForward(host, target string, w http.ResponseWriter) {
 	fwd := &ForwardSpec{Hostname: host, Target: target}
 	h.Forwards = append(h.Forwards, fwd)
 	h.Routes <- fwd
+	if w != nil {
+		t := template.New("Add template")
+		t, _ = t.Parse(add_templ)
+		t.Execute(w, fwd)
+	}
 }
 
 func ServeCfg(routes chan *ForwardSpec) {
@@ -232,7 +244,7 @@ func ServeCfg(routes chan *ForwardSpec) {
 		Forwards: make([]*ForwardSpec, 0, 20),
 		Routes:   routes,
 	}
-	handler.AddForward("switchyard.app.barakmich.com", "10.42.0.2:8889")
+	handler.AddForward("switchyard.app.barakmich.com", "10.42.0.2:8889", nil)
 	mux.Handle("/", handler)
 	addr := fmt.Sprintf(":%d", *cfg_port)
 	srv := &http.Server{Handler: mux, Addr: addr}
