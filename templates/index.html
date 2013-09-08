@@ -1,0 +1,22 @@
+<html>
+  <head>
+    <title>Switchyard Server</title>
+  </head>
+  <body>
+    <h1>Switchyard</h1>
+    <h2>Current Routes:</h2>
+    <table>
+      <thead>
+        <td>Hostname</td>
+        <td>Target</td>
+      </thead>
+    {{ range .Forwards }}
+    <tr>
+      <td> {{ .Hostname }} </td>
+      <td> {{ .Target }} </td>
+    </tr>
+    {{end}}
+  </table>
+  </body>
+
+</html>
