@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/csv"
 	"flag"
 	"fmt"
 	"html/template"
@@ -9,12 +10,13 @@ import (
 	"log"
 	"net"
 	"net/http"
-	//	"os"
+	"os"
 	"strings"
 )
 
 var fwd_port = flag.Int("port", 8888, "Port to forward virtualhosts")
 var cfg_port = flag.Int("cfg_port", 8889, "Port to configure switchyard")
+var route_file = flag.String("route_file", "switchyard.csv", "Path to the routes file")
 
 type ForwardSpec struct {
 	Hostname string
@@ -233,18 +235,54 @@ func (h *RootHandler) AddForward(host, target string, w http.ResponseWriter) {
 		t := template.New("Add template")
 		t, _ = t.Parse(add_templ)
 		t.Execute(w, fwd)
+		h.WriteToConfig()
 	}
+}
+
+func (h *RootHandler) ReadFromConfig() {
+	file, err := os.Open(*route_file)
+	if err != nil {
+		return
+	}
+	csv_file := csv.NewReader(file)
+	defer file.Close()
+	records, csv_err := csv_file.ReadAll()
+	if csv_err != nil {
+		panic("CSV Error: " + csv_err.Error())
+	}
+	for _, record := range records {
+		host := record[0]
+		route := record[1]
+		h.AddForward(host, route, nil)
+	}
+}
+
+func (h *RootHandler) WriteToConfig() {
+	file, err := os.Create(*route_file)
+	if err != nil {
+		panic("Can't save file! " + err.Error())
+	}
+	defer file.Close()
+	csv_file := csv.NewWriter(file)
+	for _, fwd := range h.Forwards {
+		record := make([]string, 2)
+		record[0] = fwd.Hostname
+		record[1] = fwd.Target
+		csv_file.Write(record)
+	}
+	csv_file.Flush()
 }
 
 func ServeCfg(routes chan *ForwardSpec) {
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
+
 	// TODO(barakmich): Create the roothandler's initial state here
 	handler := &RootHandler{
 		Forwards: make([]*ForwardSpec, 0, 20),
 		Routes:   routes,
 	}
-	handler.AddForward("switchyard.app.barakmich.com", "10.42.0.2:8889", nil)
+	handler.ReadFromConfig()
 	mux.Handle("/", handler)
 	addr := fmt.Sprintf(":%d", *cfg_port)
 	srv := &http.Server{Handler: mux, Addr: addr}
