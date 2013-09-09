@@ -292,6 +292,7 @@ func ServeCfg(routes chan *ForwardSpec) {
 }
 
 func main() {
+	flag.Parse()
 	done := make(chan bool)
 	new_routes := make(chan *ForwardSpec)
 	go ServeFwd(new_routes)
