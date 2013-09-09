@@ -36,6 +36,7 @@ Once a request makes it to Switchyard, if there's a valid route for the hostname
 Obviously, Go is required. I wrote it against 1.1, not sure if it works with anything older. It also steals an idea from Python virtualenvs (though switchyard is simple enough not to need dependencies, it may someday)
 
 To wit:
+
 ```
 git clone http://github.com/barakmich/switchyard
 cd switchyard
